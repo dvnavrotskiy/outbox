@@ -19,6 +19,7 @@ public class MyDataRepo(string connectionString) : IMyDataRepo
         await con.OpenAsync(ct);
         await using var tran = await con.BeginTransactionAsync(ct);
 
+        // Создадим новую записись или обновим старую
         var saveResult = (item.Id == 0)
             ? await con.QueryFirstAsync<MyDataSaveResult>(
                 "INSERT INTO MyDataTable (Message, Timestamp) VALUES (@Message, current_timestamp) RETURNING Id, Timestamp",
@@ -31,9 +32,13 @@ public class MyDataRepo(string connectionString) : IMyDataRepo
                 tran
             );
         
+        // Обновляем состояние модели идентификатором и штампом времени от СУБД
         item.Id = saveResult.Id;
         item.Timestamp = saveResult.Timestamp;
 
+        // В данном примере сериализация/десериализация оставлена на этом уровне,
+        // но при разнесении на два уровня имеет смысл управлять ей там же, где и логикой транзакции.
+        // Замечание справедливо и для OutboxRepo
         var data = JsonConvert.SerializeObject(item);
         await con.ExecuteAsync("INSERT INTO MyDataChangedOutbox (Data) VALUES (@Data)",
             new { Data = data },

@@ -11,7 +11,7 @@ public class MyDataController (IMyDataService service) : ControllerBase
     [HttpPost("message")]
     public async Task<IActionResult> SaveMessage([FromBody] SaveMessageRequest request, CancellationToken ct)
     {
-        // Так как у нас анимичная модель, мы можем использовать ее как контракт между слоями
+        // Так как у нас анемичная модель, мы можем использовать ее как контракт между слоями
         var item = new MyDataItem{ Id = request.Id ?? 0, Message = request.Message };
         var result = await service.SaveData(item, ct);
         return Ok(result);

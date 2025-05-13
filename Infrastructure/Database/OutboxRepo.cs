@@ -14,6 +14,12 @@ public sealed class OutboxRepo(string connectionString) : IOutboxRepo
         await using var con = new NpgsqlConnection(connectionString);
         await con.OpenAsync(ct);
 
+        // Нам нужно получить пачку записей, у которых не вышло или не назначено время обработки
+        // Мы просто внутри одной транзакции зададим записям время обработки
+        // и заберем нужные данные.
+        // Мы можем забирать в этом запросе только Id, а остальные данные забирать
+        // отдельным запросом по мере обработки. Это несколько облегчит и ускорит данный запрос,
+        // но не сильно. Логику получения данных симметрично несильно усложнит.
         var result = (await con.QueryAsync<MyDataChangedRecord>(
                 @"
 WITH batch AS (
@@ -28,6 +34,7 @@ UPDATE MyDataChangedOutbox ob SET
 FROM batch b WHERE b.Id = ob.Id
 RETURNING b.Id, b.Data, b.Created"
             ))
+            // И сконвертируем результат в контракт
             .Select(
                 record => new MyDataChangedMessage
                 {
@@ -46,6 +53,7 @@ RETURNING b.Id, b.Data, b.Created"
         await using var con = new NpgsqlConnection(connectionString);
         await con.OpenAsync(ct);
 
+        // Просто удалим обработанные записи
         await con.ExecuteAsync(
             "DELETE FROM MyDataChangedOutbox WHERE Id = ANY(@Ids)",
             new { Ids = ids }
