@@ -28,6 +28,7 @@ WITH batch AS (
 	WHERE (OccupiedTill IS NULL OR OccupiedTill < current_timestamp)
     ORDER BY Created
 	LIMIT 10
+    FOR UPDATE SKIP LOCKED
 )
 UPDATE MyDataChangedOutbox ob SET
 	OccupiedTill = current_timestamp + interval '1 minute'
