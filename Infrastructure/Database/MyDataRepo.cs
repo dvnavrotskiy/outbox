@@ -19,7 +19,7 @@ public class MyDataRepo(string connectionString) : IMyDataRepo
         await con.OpenAsync(ct);
         await using var tran = await con.BeginTransactionAsync(ct);
 
-        // Создадим новую записись или обновим старую
+        // Создадим новую запись или обновим старую
         var saveResult = (item.Id == 0)
             ? await con.QueryFirstAsync<MyDataSaveResult>(
                 "INSERT INTO MyDataTable (Message, Timestamp) VALUES (@Message, current_timestamp) RETURNING Id, Timestamp",
